@@ -1,0 +1,652 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import './styles/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dark body {
+  background-color: #0f172a;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Custom animations */
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+.typing-indicator span {
+  animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Enhanced typing indicator animations */
+@keyframes enhancedTypingWave {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8) translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2) translateY(-4px);
+  }
+}
+
+@keyframes enhancedTypingPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+    background-color: #3b82f6;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    background-color: #1d4ed8;
+  }
+}
+
+@keyframes enhancedTypingBounce {
+  0%, 80%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9) translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-3px);
+  }
+}
+
+/* ✅ ULTRA-FAST TYPING ANIMATIONS - Hardware Accelerated */
+@keyframes ultraFastTypingWave {
+  0%, 60%, 100% {
+    opacity: 0.4;
+    transform: translate3d(0, 0, 0) scale3d(0.9, 0.9, 1);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(0, -3px, 0) scale3d(1.1, 1.1, 1);
+  }
+}
+
+@keyframes ultraFastTypingPulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translate3d(0, 0, 0) scale3d(0.9, 0.9, 1);
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1.2, 1.2, 1);
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  }
+}
+
+@keyframes ultraFastTypingBounce {
+  0%, 80%, 100% {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0) scale3d(0.95, 0.95, 1);
+  }
+  40% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0) scale3d(1.05, 1.05, 1);
+  }
+}
+
+/* Enhanced typing dots with improved stability and longer visibility */
+.enhanced-typing-dot {
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  animation: enhancedTypingWave 1.8s infinite ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.4;
+  box-shadow: 0 3px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* ✅ ULTRA-FAST TYPING DOTS - Hardware Accelerated */
+.ultra-fast-typing-dot {
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  animation: ultraFastTypingWave 1.2s infinite ease-in-out;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.5;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force GPU acceleration */
+  backface-visibility: hidden;
+}
+
+/* Individual dot delays for wave effect - longer delays for better visibility */
+.enhanced-typing-dot-1 {
+  animation-delay: 0s;
+}
+
+.enhanced-typing-dot-2 {
+  animation-delay: 0.3s;
+}
+
+.enhanced-typing-dot-3 {
+  animation-delay: 0.6s;
+}
+
+/* ✅ ULTRA-FAST DOT DELAYS - Reduced for faster wave effect */
+.ultra-fast-typing-dot-1 {
+  animation-delay: 0s;
+}
+
+.ultra-fast-typing-dot-2 {
+  animation-delay: 0.15s; /* Reduced from 0.3s */
+}
+
+.ultra-fast-typing-dot-3 {
+  animation-delay: 0.3s; /* Reduced from 0.6s */
+}
+
+/* Dark mode support for enhanced dots */
+.dark .enhanced-typing-dot {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  box-shadow: 0 2px 4px rgba(96, 165, 250, 0.3);
+}
+
+/* ✅ DARK MODE SUPPORT FOR ULTRA-FAST DOTS */
+.dark .ultra-fast-typing-dot {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  box-shadow: 0 2px 4px rgba(96, 165, 250, 0.4);
+}
+
+/* Container for typing indicator with enhanced styling */
+.typing-indicator-container {
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.typing-indicator-container:hover .enhanced-typing-dot {
+  animation: enhancedTypingBounce 0.8s infinite ease-in-out;
+}
+
+/* ✅ ULTRA-FAST TYPING CONTAINER - Hardware Accelerated */
+.ultra-fast-typing-container {
+  backdrop-filter: blur(8px);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.ultra-fast-typing-container:hover .ultra-fast-typing-dot {
+  animation: ultraFastTypingBounce 0.6s infinite ease-in-out;
+}
+
+/* Enhanced Header Typing Status Bar */
+.typing-status-bar {
+  animation: slideDownFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  backdrop-filter: blur(8px);
+  border-left: 4px solid #3b82f6;
+  position: relative;
+  overflow: hidden;
+}
+
+.typing-status-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes slideDownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 100px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Header typing dots - larger and more prominent with longer animation */
+.header-typing-dot {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-radius: 50%;
+  animation: headerTypingWave 1.6s infinite ease-in-out;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.4);
+}
+
+@keyframes headerTypingWave {
+  0%, 60%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8) translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.3) translateY(-3px);
+  }
+}
+
+.header-typing-dot-1 {
+  animation-delay: 0s;
+}
+
+.header-typing-dot-2 {
+  animation-delay: 0.25s;
+}
+
+.header-typing-dot-3 {
+  animation-delay: 0.5s;
+}
+
+/* Dark mode support for header dots */
+.dark .header-typing-dot {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  box-shadow: 0 2px 6px rgba(96, 165, 250, 0.4);
+}
+
+/* Typing text animation */
+.typing-text-animation {
+  animation: textPulse 2s infinite ease-in-out;
+}
+
+@keyframes textPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Typing pulse indicator */
+.typing-pulse-indicator {
+  width: 8px;
+  height: 8px;
+  background: #2563eb;
+  border-radius: 50%;
+  animation: pulseGlow 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+  }
+}
+
+.dark .typing-pulse-indicator {
+  background: #60a5fa;
+}
+
+/* Enhanced typing indicator fade in/out */
+@keyframes enhancedTypingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes enhancedTypingFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+  70% {
+    opacity: 0.3;
+    transform: translateY(-4px) scale(0.95);
+    filter: blur(0.5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.9);
+    filter: blur(1px);
+  }
+}
+
+.enhanced-typing-bubble-enter {
+  animation: enhancedTypingFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.enhanced-typing-bubble-exit {
+  animation: enhancedTypingFadeOut 1.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ✅ ULTRA-FAST BUBBLE ANIMATIONS - Hardware Accelerated */
+@keyframes ultraFastTypingFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale3d(0.98, 0.98, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+}
+
+@keyframes ultraFastTypingFadeOut {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -3px, 0) scale3d(0.99, 0.99, 1);
+  }
+}
+
+.ultra-fast-typing-enter {
+  animation: ultraFastTypingFadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.ultra-fast-typing-exit {
+  animation: ultraFastTypingFadeOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Legacy support for existing animations */
+.typing-bubble-enter {
+  animation: enhancedTypingFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.typing-bubble-exit {
+  animation: enhancedTypingFadeOut 1.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Message bubble animations */
+.message-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.message-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Online status pulse */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.online-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Emoji Message Styles */
+.emoji-message {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: transform 0.2s ease, filter 0.2s ease;
+  cursor: default;
+  user-select: none;
+}
+
+.emoji-message:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+/* Emoji bounce animation for single emojis */
+@keyframes emojiPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.emoji-message.single-emoji {
+  animation: emojiPop 0.6s ease-out;
+}
+
+/* Emoji glow effect for dark mode */
+@media (prefers-color-scheme: dark) {
+  .emoji-message {
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1));
+  }
+
+  .emoji-message:hover {
+    filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.2));
+  }
+}
+
+/* Emoji message container styles */
+.emoji-message-container {
+  display: inline-block;
+  position: relative;
+}
+
+/* Skeleton Loading Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes skeletonWave {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Skeleton base styles */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200px 100%;
+}
+
+/* Skeleton pulse variant */
+.skeleton-pulse {
+  background-color: #f0f0f0;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.dark .skeleton-pulse {
+  background-color: #374151;
+}
+
+/* Skeleton wave variant */
+.skeleton-wave {
+  position: relative;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.skeleton-wave::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: skeletonWave 1.6s infinite;
+}
+
+.dark .skeleton-wave {
+  background-color: #374151;
+}
+
+.dark .skeleton-wave::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* Skeleton specific components */
+.skeleton-text {
+  height: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text:last-child {
+  margin-bottom: 0;
+}
+
+.skeleton-title {
+  height: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-avatar {
+  border-radius: 50%;
+}
+
+.skeleton-button {
+  height: 2.5rem;
+  border-radius: 0.375rem;
+}
+
+.skeleton-card {
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Skeleton fade-in animation */
+@keyframes skeletonFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeleton-fade-in {
+  animation: skeletonFadeIn 0.3s ease-out;
+}
+
+/* Skeleton container */
+.skeleton-container {
+  animation: skeletonFadeIn 0.3s ease-out;
+}
