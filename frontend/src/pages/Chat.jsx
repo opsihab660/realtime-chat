@@ -11,12 +11,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useChat, useDebounce, useTyping, useUsers } from '../hooks';
 // Skeleton Loading Components
 import {
-    ChatBubbleLeftRightIcon,
-    Cog6ToothIcon,
-    FaceSmileIcon,
-    MagnifyingGlassIcon,
-    PaperAirplaneIcon,
-    PhotoIcon
+  ChatBubbleLeftRightIcon,
+  Cog6ToothIcon,
+  FaceSmileIcon,
+  InformationCircleIcon,
+  MagnifyingGlassIcon,
+  PaperAirplaneIcon,
+  PhotoIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { ComputerDesktopIcon, MoonIcon, SunIcon } from '@heroicons/react/24/solid';
 import CustomEmojiPicker from '../components/CustomEmojiPicker';
@@ -41,6 +43,9 @@ const Chat = () => {
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showRightPanel, setShowRightPanel] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState('profile'); // 'profile' or 'media'
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // Ref for textarea functionality
   const textareaRef = useRef(null);
@@ -337,8 +342,12 @@ const Chat = () => {
 
   // Handle profile viewing
   const handleViewProfile = (userId) => {
-    setSelectedUserId(userId);
-    setShowProfileModal(true);
+    if (currentConversation && userId === currentConversation.participant?._id) {
+      toggleRightPanel('profile');
+    } else {
+      setSelectedUserId(userId);
+      setShowProfileModal(true);
+    }
   };
 
   const handleCloseProfileModal = () => {
@@ -346,7 +355,51 @@ const Chat = () => {
     setSelectedUserId(null);
   };
 
+  // Toggle right panel
+  const toggleRightPanel = useCallback((tab = 'profile') => {
+    setShowRightPanel(prev => {
+      if (prev && rightPanelTab === tab) {
+        return false;
+      } else {
+        setRightPanelTab(tab);
+        return true;
+      }
+    });
+  }, [rightPanelTab]);
 
+  // Close right panel if conversation changes
+  useEffect(() => {
+    setShowRightPanel(false);
+  }, [currentConversation?._id]);
+
+  // Filter messages to get only image messages
+  const imageMessages = useMemo(() => {
+    if (!messages || !messages.length) return [];
+    return messages.filter(msg => msg.type === 'image' && msg.file && !msg.deleted?.isDeleted);
+  }, [messages]);
+
+  // Get image URL
+  const getImageUrl = (filePath) => {
+    if (!filePath) return null;
+    return filePath.startsWith('http') 
+      ? filePath 
+      : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${filePath}`;
+  };
+
+  // Handle showing media gallery
+  const handleShowMediaGallery = () => {
+    toggleRightPanel('media');
+  };
+
+  // Handle image click in gallery
+  const handleImageClick = (imageMsg) => {
+    setSelectedImage(imageMsg);
+  };
+
+  // Close image preview
+  const handleCloseImagePreview = () => {
+    setSelectedImage(null);
+  };
 
   return (
     <div className="chat-container h-screen w-screen flex bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
@@ -923,6 +976,22 @@ const Chat = () => {
                       </p>
                     </button>
                   </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2">
+                    {/* Info Button - Single toggle for right panel */}
+                    <button
+                      onClick={() => toggleRightPanel(rightPanelTab || 'profile')}
+                      className={`p-2 rounded-full transition-colors ${
+                        showRightPanel
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400'
+                      }`}
+                      title="View details"
+                    >
+                      <InformationCircleIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -933,73 +1002,275 @@ const Chat = () => {
               />
             </div>
 
-            {/* Messages Area with Enhanced Lazy Loading */}
-            <div
-              ref={messagesContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
-            >
-              {isLoadingMessages && messages.length === 0 ? (
-                <MessageListSkeleton
-                  count={3}
-                  variant="shimmer"
-                  randomPattern={true}
-                  className="py-4"
-                />
-              ) : messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Start a conversation with {currentConversation.participant?.username}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {/* Load Trigger Element for Intersection Observer - positioned at top */}
-                  {hasMoreMessages && (
-                    <div
-                      ref={loadTriggerRef}
-                      className="flex justify-center py-2"
-                      style={{ minHeight: '40px' }}
-                    >
-                      {isLoadingOlderMessages ? (
-                        <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                          <span className="text-sm font-medium">Loading older messages...</span>
+            {/* Main Chat Container with Right Panel */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Messages Area with Enhanced Lazy Loading */}
+              <div 
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className={`overflow-y-auto p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent ${
+                  showRightPanel ? 'hidden md:block md:flex-1' : 'flex-1'
+                }`}
+              >
+                {isLoadingMessages && messages.length === 0 ? (
+                  <MessageListSkeleton
+                    count={3}
+                    variant="shimmer"
+                    randomPattern={true}
+                    className="py-4"
+                  />
+                ) : messages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Start a conversation with {currentConversation.participant?.username}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Load Trigger Element for Intersection Observer - positioned at top */}
+                    {hasMoreMessages && (
+                      <div
+                        ref={loadTriggerRef}
+                        className="flex justify-center py-2"
+                        style={{ minHeight: '40px' }}
+                      >
+                        {isLoadingOlderMessages ? (
+                          <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                            <span className="text-sm font-medium">Loading older messages...</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-gray-800/80 px-3 py-1 rounded-full backdrop-blur-sm">
+                            Scroll up for more messages
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Messages */}
+                    {messages.map((msg) => (
+                      <div key={msg._id} data-message-id={msg._id}>
+                        <Message
+                          message={msg}
+                          isOwn={msg.sender._id === user._id}
+                          currentUser={user}
+                          conversationParticipant={currentConversation?.participant}
+                          onReply={handleReply}
+                          onEdit={handleEditMessage}
+                          onDelete={handleDeleteMessage}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Modern Typing indicator */}
+                    <TypingIndicator
+                      typingUsers={typingUsers}
+                      timestamp={typingTimestamp}
+                    />
+
+                    {/* Auto-scroll target */}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {/* Right Side Panel - Responsive */}
+              <div 
+                className={`bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 h-full overflow-hidden transition-all duration-300 ease-in-out ${
+                  showRightPanel 
+                    ? 'w-full md:w-80 lg:w-96 opacity-100' 
+                    : 'w-0 opacity-0'
+                }`}
+              >
+                {showRightPanel && (
+                  <div className="h-full flex flex-col">
+                    {/* Panel Header */}
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {rightPanelTab === 'profile' ? 'Profile Details' : 'Shared Media'}
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        {/* Mobile Back Button */}
+                        <button
+                          onClick={() => setShowRightPanel(false)}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Panel Tabs */}
+                    <div className="flex border-b border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={() => setRightPanelTab('profile')}
+                        className={`flex-1 py-3 text-sm font-medium text-center ${
+                          rightPanelTab === 'profile'
+                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        Profile
+                      </button>
+                      <button
+                        onClick={() => setRightPanelTab('media')}
+                        className={`flex-1 py-3 text-sm font-medium text-center ${
+                          rightPanelTab === 'media'
+                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        Media
+                      </button>
+                    </div>
+
+                    {/* Panel Content - Responsive Padding */}
+                    <div className="flex-1 overflow-y-auto scrollbar-thin">
+                      {rightPanelTab === 'profile' && currentConversation?.participant && (
+                        <div className="p-3 sm:p-4">
+                          {/* User Profile Section */}
+                          <div className="text-center mb-6">
+                            <div className="mb-4">
+                              <UserAvatar 
+                                user={currentConversation.participant}
+                                size="xl"
+                                showStatus={true}
+                                isOnline={isUserOnline(currentConversation.participant?._id)}
+                                className="mx-auto"
+                              />
+                            </div>
+                            
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                              {currentConversation.participant.displayName || currentConversation.participant.username}
+                            </h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-2">
+                              @{currentConversation.participant.username}
+                            </p>
+                            
+                            <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm">
+                              <span className={`w-2 h-2 rounded-full mr-2 ${
+                                isUserOnline(currentConversation.participant?._id) 
+                                  ? 'bg-green-500' 
+                                  : 'bg-gray-400'
+                              }`}></span>
+                              <span>{getUserStatusText(currentConversation.participant?._id)}</span>
+                            </div>
+                          </div>
+
+                          {/* Bio Section */}
+                          {currentConversation.participant.bio && (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                                Bio
+                              </h4>
+                              <p className="text-gray-800 dark:text-gray-200 text-sm">
+                                {currentConversation.participant.bio}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* User Details */}
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                              Information
+                            </h4>
+                            <div className="space-y-3">
+                              {currentConversation.participant.fullName && (
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                    Full Name
+                                  </label>
+                                  <p className="text-sm text-gray-900 dark:text-white">
+                                    {currentConversation.participant.fullName}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                  Username
+                                </label>
+                                <p className="text-sm text-gray-900 dark:text-white">
+                                  {currentConversation.participant.username}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                              Actions
+                            </h4>
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => navigate(`/profile/${currentConversation.participant._id}`)}
+                                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <span>View Full Profile</span>
+                              </button>
+                              
+                              <button
+                                className="w-full py-2 px-4 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <span>Block User</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-gray-800/80 px-3 py-1 rounded-full backdrop-blur-sm">
-                          Scroll up for more messages
+                      )}
+                      
+                      {rightPanelTab === 'media' && (
+                        <div className="p-3 sm:p-4">
+                          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                            Shared Images
+                          </h4>
+                          
+                          {imageMessages.length === 0 ? (
+                            <div className="text-center py-10">
+                              <PhotoIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                              <p className="text-gray-500 dark:text-gray-400">
+                                No images shared in this conversation yet
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2">
+                              {imageMessages.map((imgMsg) => (
+                                <div 
+                                  key={imgMsg._id} 
+                                  className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => handleImageClick(imgMsg)}
+                                >
+                                  <img 
+                                    src={getImageUrl(imgMsg.file?.url)} 
+                                    alt={imgMsg.content || 'Shared image'} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = 'https://via.placeholder.com/150?text=Error';
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {/* Messages */}
-                  {messages.map((msg) => (
-                    <div key={msg._id} data-message-id={msg._id}>
-                      <Message
-                        message={msg}
-                        isOwn={msg.sender._id === user._id}
-                        currentUser={user}
-                        conversationParticipant={currentConversation?.participant}
-                        onReply={handleReply}
-                        onEdit={handleEditMessage}
-                        onDelete={handleDeleteMessage}
-                      />
+                    {/* Back to Chat Button - Mobile Only */}
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 md:hidden">
+                      <button
+                        onClick={() => setShowRightPanel(false)}
+                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center"
+                      >
+                        Back to Chat
+                      </button>
                     </div>
-                  ))}
-
-                  {/* Modern Typing indicator */}
-                  <TypingIndicator
-                    typingUsers={typingUsers}
-                    timestamp={typingTimestamp}
-                  />
-
-                  {/* Auto-scroll target */}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Reply Preview */}
@@ -1105,7 +1376,7 @@ const Chat = () => {
         <LazyLoadingTest enabled={true} />
       )}
 
-      {/* User Profile Modal */}
+      {/* User Profile Modal - Now only used for non-current conversation users */}
       <UserProfileModal
         userId={selectedUserId}
         isOpen={showProfileModal}
@@ -1118,6 +1389,40 @@ const Chat = () => {
         onImageUpload={handleImageUpload}
         onClose={() => setShowImageUpload(false)}
       />
+      
+      {/* Full Size Image Preview */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          onClick={handleCloseImagePreview}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCloseImagePreview();
+              }}
+              className="absolute -top-12 right-0 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+            <img
+              src={getImageUrl(selectedImage.file?.url)}
+              alt={selectedImage.content || 'Shared image'}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            {selectedImage.content && (
+              <div className="mt-4 text-center text-white bg-black bg-opacity-50 p-3 rounded">
+                <p>{selectedImage.content}</p>
+                <p className="text-sm text-gray-300 mt-1">
+                  Sent {new Date(selectedImage.createdAt).toLocaleString()}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

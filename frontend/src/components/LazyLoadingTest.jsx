@@ -52,7 +52,7 @@ const LazyLoadingTest = ({ enabled = false }) => {
   if (!enabled) return null;
 
   return (
-    <div className="fixed top-4 right-4 bg-green-900/90 text-green-100 text-xs p-3 rounded-lg font-mono z-50 min-w-[200px]">
+    <div className="fixed top-4 right-4 bg-green-900/90 text-green-100 text-xs p-3 rounded-lg font-mono z-50 min-w-[200px] hidden">
       <div className="text-green-300 font-bold mb-2">🚀 Lazy Loading Stats</div>
       <div className="space-y-1">
         <div>Load Time: {stats.initialLoadTime}ms</div>
