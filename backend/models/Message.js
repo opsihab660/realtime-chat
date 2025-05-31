@@ -24,10 +24,13 @@ const messageSchema = new mongoose.Schema({
     default: 'text'
   },
   file: {
+    id: String,
     url: String,
-    name: String,
+    filename: String,
+    originalName: String,
     size: Number,
-    mimeType: String
+    mimeType: String,
+    uploadedAt: Date
   },
   audio: {
     url: String,

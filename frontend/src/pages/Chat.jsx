@@ -1,29 +1,31 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useChat, useUsers, useTyping, useDebounce } from '../hooks';
-import TypingIndicator from '../components/TypingIndicator';
 import HeaderTypingIndicator from '../components/HeaderTypingIndicator';
 import Message from '../components/Message';
 import ReplyPreview from '../components/ReplyPreview';
+import TypingIndicator from '../components/TypingIndicator';
+import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { useChat, useDebounce, useTyping, useUsers } from '../hooks';
 // Skeleton Loading Components
+import {
+    ChatBubbleLeftRightIcon,
+    Cog6ToothIcon,
+    FaceSmileIcon,
+    MagnifyingGlassIcon,
+    PaperAirplaneIcon,
+    PhotoIcon
+} from '@heroicons/react/24/outline';
+import { ComputerDesktopIcon, MoonIcon, SunIcon } from '@heroicons/react/24/solid';
+import CustomEmojiPicker from '../components/CustomEmojiPicker';
+import ImageUpload from '../components/ImageUpload';
+import InitialLoader from '../components/InitialLoader';
+import LazyLoader from '../components/LazyLoader';
+import LazyLoadingTest from '../components/LazyLoadingTest';
 import { ConversationListSkeleton } from '../components/skeletons/ConversationSkeleton';
 import { MessageListSkeleton } from '../components/skeletons/MessageSkeleton';
-import CustomEmojiPicker from '../components/CustomEmojiPicker';
-import LazyLoader from '../components/LazyLoader';
-import InitialLoader from '../components/InitialLoader';
-import LazyLoadingTest from '../components/LazyLoadingTest';
 import UserProfileModal from '../components/UserProfileModal';
-import {
-  ChatBubbleLeftRightIcon,
-  Cog6ToothIcon,
-  MagnifyingGlassIcon,
-  PaperAirplaneIcon,
-  FaceSmileIcon
-} from '@heroicons/react/24/outline';
-import { SunIcon, MoonIcon, ComputerDesktopIcon } from '@heroicons/react/24/solid';
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ const Chat = () => {
   const [typingTimestamp, setTypingTimestamp] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
@@ -209,6 +212,14 @@ const Chat = () => {
 
   const handleCancelReply = () => {
     setReplyingTo(null);
+  };
+
+  const handleImageUpload = (fileData, caption = '') => {
+    if (currentConversation) {
+      handleSendMessage(caption, 'image', replyingTo?._id, fileData);
+      setReplyingTo(null);
+      setShowEmojiPicker(false);
+    }
   };
 
   // Handle message editing
@@ -1082,6 +1093,17 @@ const Chat = () => {
                     <FaceSmileIcon className="w-5 h-5" />
                   </button>
                 </div>
+
+                {/* Image Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowImageUpload(true)}
+                  className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 flex items-center justify-center"
+                  title="Upload image"
+                >
+                  <PhotoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+
                 <button
                   type="submit"
                   disabled={!message.trim()}
@@ -1118,6 +1140,13 @@ const Chat = () => {
         userId={selectedUserId}
         isOpen={showProfileModal}
         onClose={handleCloseProfileModal}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUpload
+        isVisible={showImageUpload}
+        onImageUpload={handleImageUpload}
+        onClose={() => setShowImageUpload(false)}
       />
     </div>
   );

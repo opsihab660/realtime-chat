@@ -85,8 +85,27 @@ export const fileAPI = {
   uploadFile: (file, onProgress) => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     return api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          onProgress(percentCompleted);
+        }
+      },
+    });
+  },
+
+  uploadImage: (file, onProgress) => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    return api.post('/upload/image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

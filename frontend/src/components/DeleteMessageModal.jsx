@@ -1,5 +1,5 @@
+import { TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import React from 'react';
-import { XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const DeleteMessageModal = ({ 
   isOpen, 

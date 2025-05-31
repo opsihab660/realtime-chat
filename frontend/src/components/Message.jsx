@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowUturnLeftIcon, EllipsisVerticalIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { isEmojiOnly, countEmojis, getEmojiSizeClass, isSingleEmoji } from '../utils/emojiUtils';
+import { ArrowUturnLeftIcon, CheckIcon, EllipsisVerticalIcon, PencilIcon, PhotoIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useEffect, useRef, useState } from 'react';
+import { countEmojis, getEmojiSizeClass, isEmojiOnly, isSingleEmoji } from '../utils/emojiUtils';
 import DeleteMessageModal from './DeleteMessageModal';
 
 const Message = ({
@@ -18,7 +18,18 @@ const Message = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const editTextareaRef = useRef(null);
+
+  // Reset image states when message changes
+  useEffect(() => {
+    if (message.type === 'image') {
+      setImageLoading(true);
+      setImageError(false);
+    }
+  }, [message._id, message.type]);
 
   // Focus textarea when editing starts
   useEffect(() => {
@@ -96,6 +107,16 @@ const Message = ({
     setShowDeleteModal(false);
   };
 
+  const handleImageClick = () => {
+    if (!imageError) {
+      setShowImagePreview(true);
+    }
+  };
+
+  const handleCloseImagePreview = () => {
+    setShowImagePreview(false);
+  };
+
   // Check if message is emoji-only
   const isEmojiOnlyMessage = isEmojiOnly(message.content);
   const emojiCount = countEmojis(message.content);
@@ -104,8 +125,6 @@ const Message = ({
   // Check if reply-to message is emoji-only
   const isReplyToEmojiOnly = message.replyTo ? isEmojiOnly(message.replyTo.content) : false;
   const replyToEmojiCount = message.replyTo ? countEmojis(message.replyTo.content) : 0;
-
-
 
   // Helper function to get reply sender name
   const getReplyToSenderName = () => {
@@ -154,6 +173,7 @@ const Message = ({
   };
 
   const isEditable = canEdit();
+  const imageUrl = message.file ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${message.file.url}` : '';
 
   return (
     <>
@@ -264,14 +284,60 @@ const Message = ({
               </div>
             ) : (
               <div>
-                <p className={`
-                  ${isEmojiOnlyMessage
-                    ? `${getEmojiSizeClass(emojiCount)} leading-none text-center emoji-message font-emoji ${isSingleEmojiMessage ? 'single-emoji' : ''}`
-                    : 'text-sm break-words whitespace-pre-wrap'
-                  }
-                `}>
-                  {message.content}
-                </p>
+                {/* Image message */}
+                {message.type === 'image' && message.file ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      {imageLoading && !imageError && (
+                        <div className="flex items-center justify-center w-64 h-48 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        </div>
+                      )}
+
+                      {imageError ? (
+                        <div className="flex flex-col items-center justify-center w-64 h-48 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                          <PhotoIcon className="w-12 h-12 text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            Failed to load image
+                          </p>
+                        </div>
+                      ) : (
+                        <img
+                          src={imageUrl}
+                          alt="Image"
+                          className={`max-w-xs max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${imageLoading ? 'hidden' : 'block'}`}
+                          onLoad={() => setImageLoading(false)}
+                          onError={() => {
+                            setImageLoading(false);
+                            setImageError(true);
+                          }}
+                          onClick={handleImageClick}
+                          crossOrigin="anonymous"
+                        />
+                      )}
+                    </div>
+
+                    {/* Caption only if exists */}
+                    {message.content && (
+                      <p className={`
+                        text-sm break-words whitespace-pre-wrap
+                        ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'}
+                      `}>
+                        {message.content}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* Text message */
+                  <p className={`
+                    ${isEmojiOnlyMessage
+                      ? `${getEmojiSizeClass(emojiCount)} leading-none text-center emoji-message font-emoji ${isSingleEmojiMessage ? 'single-emoji' : ''}`
+                      : 'text-sm break-words whitespace-pre-wrap'
+                    }
+                  `}>
+                    {message.content}
+                  </p>
+                )}
                 {message.edited?.isEdited && (
                   <p className={`text-xs mt-1 italic ${
                     isOwn ? 'text-blue-200' : 'text-gray-500 dark:text-gray-400'
@@ -391,6 +457,33 @@ const Message = ({
       message={message}
       isDeleting={isDeleting}
     />
+
+    {/* Image Preview Modal */}
+    {showImagePreview && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75" onClick={handleCloseImagePreview}>
+        <div className="relative max-w-screen-lg max-h-screen-lg p-4">
+          <button
+            onClick={handleCloseImagePreview}
+            className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+          <img 
+            src={imageUrl} 
+            alt="Image preview" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            crossOrigin="anonymous"
+            onClick={(e) => e.stopPropagation()}
+          />
+          
+          {message.content && (
+            <div className="mt-2 p-3 bg-white/10 backdrop-blur-sm rounded-lg text-white text-sm">
+              {message.content}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </>
   );
 };

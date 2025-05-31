@@ -1,16 +1,17 @@
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import { createServer } from 'http';
 import mongoose from 'mongoose';
+import { Server } from 'socket.io';
 
 // Import routes
 import authRoutes from './routes/auth.js';
-import userRoutes from './routes/users.js';
 import messageRoutes from './routes/messages.js';
+import uploadRoutes from './routes/upload.js';
+import userRoutes from './routes/users.js';
 
 // Import socket handlers
 import { handleSocketConnection, socketAuthMiddleware } from './socket/socketHandlers.js';
@@ -80,6 +81,15 @@ app.options('*', (req, res) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve static files from uploads directory with proper CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static('uploads'));
+
 // MongoDB connection
 if (!process.env.MONGODB_URI) {
   console.error('❌ MONGODB_URI environment variable is not set');
@@ -98,6 +108,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

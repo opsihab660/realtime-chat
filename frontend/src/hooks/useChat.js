@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSocket } from '../contexts/SocketContext';
-import { useAuth } from '../contexts/AuthContext';
-import { messagesAPI } from '../services/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
+import { messagesAPI } from '../services/api';
 
 export const useChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -348,16 +348,21 @@ export const useChat = () => {
   }, [loadMessages, scrollToBottom]);
 
   // Send a message with optimistic updates
-  const handleSendMessage = useCallback((content, type = 'text', replyTo = null) => {
-    if (!currentConversation || !content.trim()) return;
+  const handleSendMessage = useCallback((content, type = 'text', replyTo = null, file = null) => {
+    if (!currentConversation || (!content.trim() && !file)) return;
 
     const messageData = {
       recipientId: currentConversation.participant._id,
-      content: content.trim(),
+      content: content ? content.trim() : '',
       type,
       conversationId: currentConversation._id,
       replyTo
     };
+
+    // Add file data for image messages
+    if (type === 'image' && file) {
+      messageData.file = file;
+    }
 
     // Create optimistic message for immediate UI update
     const optimisticMessage = {

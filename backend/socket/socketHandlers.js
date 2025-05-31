@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
 
 // Store active users and their socket connections
 const activeUsers = new Map();
@@ -114,7 +114,7 @@ export const handleSocketConnection = async (socket, io) => {
   // Handle sending messages
   socket.on('send_message', async (data) => {
     try {
-      const { recipientId, content, type = 'text', conversationId, replyTo } = data;
+      const { recipientId, content, type = 'text', conversationId, replyTo, file } = data;
 
       // Validate recipient
       const recipient = await User.findById(recipientId);
@@ -146,6 +146,11 @@ export const handleSocketConnection = async (socket, io) => {
         type,
         replyTo: replyTo || null
       };
+
+      // Add file data for image messages
+      if (type === 'image' && file) {
+        messageData.file = file;
+      }
 
       const message = new Message(messageData);
       await message.save();

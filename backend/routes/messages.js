@@ -1,9 +1,9 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import Message from '../models/Message.js';
+import { authenticateToken, validateConversationAccess } from '../middleware/auth.js';
 import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
 import User from '../models/User.js';
-import { authenticateToken, validateConversationAccess, validateMessageOwnership } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -226,7 +226,31 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
   body('replyTo')
     .optional()
     .isMongoId()
-    .withMessage('Reply to must be a valid message ID')
+    .withMessage('Reply to must be a valid message ID'),
+  body('file')
+    .optional()
+    .isObject()
+    .withMessage('File must be an object'),
+  body('file.url')
+    .if(body('file').exists())
+    .notEmpty()
+    .withMessage('File URL is required'),
+  body('file.originalName')
+    .if(body('file').exists())
+    .notEmpty()
+    .withMessage('File original name is required'),
+  body('file.filename')
+    .if(body('file').exists())
+    .notEmpty()
+    .withMessage('File filename is required'),
+  body('file.size')
+    .if(body('file').exists())
+    .isNumeric()
+    .withMessage('File size must be a number'),
+  body('file.mimeType')
+    .if(body('file').exists())
+    .notEmpty()
+    .withMessage('File MIME type is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -237,7 +261,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       });
     }
 
-    const { content, type = 'text', replyTo } = req.body;
+    const { content, type = 'text', replyTo, file } = req.body;
     const { conversationId } = req.params;
     const senderId = req.user._id;
     const conversation = req.conversation;
@@ -255,6 +279,13 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       });
     }
 
+    if (type === 'image' && !file) {
+      return res.status(400).json({
+        message: 'Image messages require file data',
+        error: 'FILE_REQUIRED'
+      });
+    }
+
     // Create message
     const messageData = {
       sender: senderId,
@@ -262,6 +293,11 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       content,
       type
     };
+
+    // Add file data for image messages
+    if (type === 'image' && file) {
+      messageData.file = file;
+    }
 
     if (replyTo) {
       // Validate reply message exists and is in this conversation
