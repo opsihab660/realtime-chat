@@ -1,4 +1,5 @@
 import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import imageCompression from 'browser-image-compression';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
@@ -9,6 +10,31 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
   const [caption, setCaption] = useState('');
+  const [compressing, setCompressing] = useState(false);
+
+  const compressImage = async (file) => {
+    try {
+      setCompressing(true);
+      
+      const options = {
+        maxSizeMB: 0.1, // 100KB
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: file.type,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      console.log('Original file size:', file.size / 1024, 'KB');
+      console.log('Compressed file size:', compressedFile.size / 1024, 'KB');
+      
+      return compressedFile;
+    } catch (error) {
+      console.error('Image compression error:', error);
+      throw error;
+    } finally {
+      setCompressing(false);
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -26,19 +52,28 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
       return;
     }
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewImage(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload image
-    setUploading(true);
-    setUploadProgress(0);
-
     try {
-      const response = await fileAPI.uploadImage(file, (progress) => {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Compress image if larger than 100KB
+      let fileToUpload = file;
+      if (file.size > 100 * 1024) {
+        toast.loading('Compressing image...', { id: 'compressing' });
+        fileToUpload = await compressImage(file);
+        toast.dismiss('compressing');
+        toast.success('Image compressed successfully');
+      }
+
+      // Upload image
+      setUploading(true);
+      setUploadProgress(0);
+
+      const response = await fileAPI.uploadImage(fileToUpload, (progress) => {
         setUploadProgress(progress);
       });
 
@@ -55,7 +90,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
       setUploading(false);
       setUploadProgress(0);
     }
-  }, [onImageUpload]);
+  }, [onImageUpload, caption]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -63,7 +98,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
     multiple: false,
-    disabled: uploading
+    disabled: uploading || compressing
   });
 
   const handleClose = () => {
@@ -86,7 +121,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
           </h3>
           <button
             onClick={handleClose}
-            disabled={uploading}
+            disabled={uploading || compressing}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
@@ -104,11 +139,11 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
                 />
-                {uploading && (
+                {(uploading || compressing) && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
                     <div className="text-white text-center">
                       <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm">Uploading... {uploadProgress}%</p>
+                      <p className="text-sm">{compressing ? 'Compressing...' : `Uploading... ${uploadProgress}%`}</p>
                     </div>
                   </div>
                 )}
@@ -134,7 +169,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
                 }
-                ${uploading ? 'pointer-events-none opacity-50' : ''}
+                ${(uploading || compressing) ? 'pointer-events-none opacity-50' : ''}
               `}
             >
               <input {...getInputProps()} />
@@ -146,7 +181,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
                 }
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                Supports JPEG, PNG, GIF, WebP (max 5MB)
+                Supports JPEG, PNG, GIF, WebP (max 5MB, will be compressed to 100KB)
               </p>
             </div>
           )}
@@ -164,7 +199,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows="2"
                 maxLength="200"
-                disabled={uploading}
+                disabled={uploading || compressing}
               />
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
                 {caption.length}/200
@@ -177,7 +212,7 @@ const ImageUpload = ({ onImageUpload, onClose, isVisible }) => {
         <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleClose}
-            disabled={uploading}
+            disabled={uploading || compressing}
             className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel

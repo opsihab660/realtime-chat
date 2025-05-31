@@ -1,4 +1,5 @@
-import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import imageCompression from 'browser-image-compression';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
@@ -10,6 +11,32 @@ const AvatarUpload = ({ onClose, isVisible }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
+  const [compressing, setCompressing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const compressImage = async (file) => {
+    try {
+      setCompressing(true);
+      
+      const options = {
+        maxSizeMB: 0.1, // 100KB
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        fileType: file.type,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      console.log('Original avatar size:', file.size / 1024, 'KB');
+      console.log('Compressed avatar size:', compressedFile.size / 1024, 'KB');
+      
+      return compressedFile;
+    } catch (error) {
+      console.error('Avatar compression error:', error);
+      throw error;
+    } finally {
+      setCompressing(false);
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -27,20 +54,29 @@ const AvatarUpload = ({ onClose, isVisible }) => {
       return;
     }
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewImage(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload avatar
-    setUploading(true);
-    setUploadProgress(0);
-
     try {
-      console.log('Uploading avatar file:', file.name, file.type, file.size);
-      const response = await fileAPI.uploadAvatar(file, (progress) => {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Compress image if larger than 100KB
+      let fileToUpload = file;
+      if (file.size > 100 * 1024) {
+        toast.loading('Compressing image...', { id: 'compressing' });
+        fileToUpload = await compressImage(file);
+        toast.dismiss('compressing');
+        toast.success('Image compressed successfully');
+      }
+
+      // Upload avatar
+      setUploading(true);
+      setUploadProgress(0);
+
+      console.log('Uploading avatar file:', fileToUpload.name, fileToUpload.type, fileToUpload.size);
+      const response = await fileAPI.uploadAvatar(fileToUpload, (progress) => {
         setUploadProgress(progress);
       });
 
@@ -67,13 +103,34 @@ const AvatarUpload = ({ onClose, isVisible }) => {
     }
   }, [updateUser]);
 
+  const handleDeleteAvatar = async () => {
+    if (!user || !user.avatar) return;
+    
+    try {
+      setDeleting(true);
+      const response = await fileAPI.deleteAvatar();
+      
+      if (response.data && response.data.user) {
+        // Update user in context
+        updateUser(response.data.user);
+        toast.success('Profile picture removed successfully');
+        handleClose();
+      }
+    } catch (error) {
+      console.error('Avatar deletion error:', error);
+      toast.error('Failed to remove profile picture');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
     multiple: false,
-    disabled: uploading
+    disabled: uploading || compressing || deleting
   });
 
   const handleClose = () => {
@@ -95,7 +152,7 @@ const AvatarUpload = ({ onClose, isVisible }) => {
           </h3>
           <button
             onClick={handleClose}
-            disabled={uploading}
+            disabled={uploading || compressing || deleting}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
@@ -104,6 +161,38 @@ const AvatarUpload = ({ onClose, isVisible }) => {
 
         {/* Content */}
         <div className="p-4">
+          {user && user.avatar && !previewImage && (
+            <div className="space-y-4 mb-6">
+              <div className="relative mx-auto w-40 h-40 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-600">
+                <img
+                  src={user.avatar}
+                  alt="Current avatar"
+                  className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
+                />
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={handleDeleteAvatar}
+                  disabled={deleting}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Removing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="w-4 h-4" />
+                      <span>Remove Picture</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
           {previewImage ? (
             <div className="space-y-4">
               {/* Preview */}
@@ -113,11 +202,11 @@ const AvatarUpload = ({ onClose, isVisible }) => {
                   alt="Preview"
                   className="w-full h-full object-cover"
                 />
-                {uploading && (
+                {(uploading || compressing) && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className="text-white text-center">
                       <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm">Uploading... {uploadProgress}%</p>
+                      <p className="text-sm">{compressing ? 'Compressing...' : `Uploading... ${uploadProgress}%`}</p>
                     </div>
                   </div>
                 )}
@@ -134,7 +223,7 @@ const AvatarUpload = ({ onClose, isVisible }) => {
               )}
               
               {/* Upload button */}
-              {!uploading && (
+              {!uploading && !compressing && (
                 <div className="flex justify-center">
                   <button
                     onClick={() => onDrop([dataURLtoFile(previewImage, 'avatar.jpg')])}
@@ -155,7 +244,7 @@ const AvatarUpload = ({ onClose, isVisible }) => {
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
                 }
-                ${uploading ? 'pointer-events-none opacity-50' : ''}
+                ${(uploading || compressing || deleting) ? 'pointer-events-none opacity-50' : ''}
               `}
             >
               <input {...getInputProps()} />
@@ -167,7 +256,7 @@ const AvatarUpload = ({ onClose, isVisible }) => {
                 }
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                Supports JPEG, PNG, GIF, WebP (max 2MB)
+                Supports JPEG, PNG, GIF, WebP (max 2MB, will be compressed to 100KB)
               </p>
             </div>
           )}
@@ -177,7 +266,7 @@ const AvatarUpload = ({ onClose, isVisible }) => {
         <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleClose}
-            disabled={uploading}
+            disabled={uploading || compressing || deleting}
             className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel

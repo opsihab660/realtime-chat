@@ -138,6 +138,14 @@ export const fileAPI = {
       },
     });
   },
+
+  deleteImage: (filename) => {
+    return api.delete(`/upload/image/${filename}`);
+  },
+  
+  deleteAvatar: () => {
+    return api.delete('/upload/avatar');
+  }
 };
 
 // Health check API

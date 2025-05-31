@@ -29,6 +29,7 @@ import LazyLoadingTest from '../components/LazyLoadingTest';
 import { ConversationListSkeleton } from '../components/skeletons/ConversationSkeleton';
 import { MessageListSkeleton } from '../components/skeletons/MessageSkeleton';
 import UserProfileModal from '../components/UserProfileModal';
+import { fileAPI } from '../services/api';
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -259,6 +260,23 @@ const Chat = () => {
         currentConversation: currentConversation
       });
 
+      // If message contains an image, delete the image file from server first
+      if (messageToDelete.type === 'image' && messageToDelete.file) {
+        try {
+          // Extract filename from the URL
+          const imageUrl = messageToDelete.file.url;
+          const filename = imageUrl.split('/').pop();
+          
+          // Delete the image file
+          await fileAPI.deleteImage(filename);
+          console.log('Image file deleted from server:', filename);
+        } catch (error) {
+          console.error('Failed to delete image file from server:', error);
+          // Continue with message deletion even if image deletion fails
+        }
+      }
+
+      // Delete the message
       deleteMessage({
         messageId: messageToDelete._id,
         conversationId: currentConversation._id
@@ -1077,10 +1095,10 @@ const Chat = () => {
 
               {/* Right Side Panel - Responsive */}
               <div 
-                className={`bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 h-full overflow-hidden transition-all duration-300 ease-in-out ${
+                className={`bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out ${
                   showRightPanel 
-                    ? 'w-full md:w-80 lg:w-96 opacity-100' 
-                    : 'w-0 opacity-0'
+                    ? 'w-full md:w-80 lg:w-96 opacity-100 h-full absolute md:static top-0 left-0 right-0 z-20' 
+                    : 'w-0 opacity-0 h-full'
                 }`}
               >
                 {showRightPanel && (
@@ -1282,7 +1300,9 @@ const Chat = () => {
             />
 
             {/* Message Input */}
-            <div className="flex-shrink-0 p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+            <div className={`flex-shrink-0 p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative ${
+              showRightPanel ? 'md:pr-[336px] lg:pr-[384px] z-10' : ''
+            }`}>
               {/* Custom Emoji Picker */}
               <div className="absolute bottom-full right-2 sm:right-3 mb-2 z-50">
                 <CustomEmojiPicker

@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import express from 'express';
+import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -140,6 +141,33 @@ router.post('/avatar', authenticateToken, avatarUpload.single('avatar'), async (
     user.avatar = avatarUrl;
     await user.save();
 
+    // Delete old avatar file if it exists
+    if (oldAvatar) {
+      try {
+        // Extract filename from the old avatar URL
+        const oldFilename = oldAvatar.split('/').pop();
+        const oldAvatarPath = path.join(__dirname, '../uploads/avatars', oldFilename);
+        
+        // Check if file exists before attempting to delete
+        fs.access(oldAvatarPath, fs.constants.F_OK, (err) => {
+          if (!err) {
+            // File exists, delete it
+            fs.unlink(oldAvatarPath, (err) => {
+              if (err) {
+                console.error('Error deleting old avatar file:', err);
+                // Continue even if deletion fails
+              } else {
+                console.log('Successfully deleted old avatar file:', oldFilename);
+              }
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Error during old avatar cleanup:', error);
+        // Continue even if cleanup fails
+      }
+    }
+
     // Return success with updated user data
     res.status(200).json({
       message: 'Avatar uploaded successfully',
@@ -215,6 +243,109 @@ router.get('/avatar/:filename', (req, res) => {
     res.status(500).json({
       message: 'Failed to serve avatar',
       error: 'AVATAR_SERVE_ERROR'
+    });
+  }
+});
+
+// Delete image endpoint
+router.delete('/image/:filename', authenticateToken, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const imagePath = path.join(__dirname, '../uploads/images', filename);
+
+    // Check if file exists
+    fs.access(imagePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        return res.status(404).json({
+          message: 'Image not found',
+          error: 'IMAGE_NOT_FOUND'
+        });
+      }
+
+      // Delete file
+      fs.unlink(imagePath, (err) => {
+        if (err) {
+          console.error('Error deleting image:', err);
+          return res.status(500).json({
+            message: 'Failed to delete image',
+            error: 'DELETE_ERROR'
+          });
+        }
+
+        res.status(200).json({
+          message: 'Image deleted successfully'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Image deletion error:', error);
+    res.status(500).json({
+      message: 'Failed to delete image',
+      error: 'DELETE_ERROR'
+    });
+  }
+});
+
+// Delete avatar endpoint
+router.delete('/avatar', authenticateToken, async (req, res) => {
+  try {
+    // Get user
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+        error: 'USER_NOT_FOUND'
+      });
+    }
+
+    // If user has no avatar, return success
+    if (!user.avatar) {
+      return res.status(200).json({
+        message: 'No avatar to delete'
+      });
+    }
+
+    // Extract filename from avatar URL
+    const avatarUrl = user.avatar;
+    const filename = path.basename(avatarUrl);
+    const avatarPath = path.join(__dirname, '../uploads/avatars', filename);
+
+    // Delete file if it exists
+    fs.access(avatarPath, fs.constants.F_OK, async (err) => {
+      // Remove avatar from user profile regardless of file existence
+      user.avatar = null;
+      await user.save();
+
+      if (err) {
+        // File doesn't exist, but we updated the user profile
+        return res.status(200).json({
+          message: 'Avatar removed from profile',
+          user: user.getSafeProfile()
+        });
+      }
+
+      // Delete the file
+      fs.unlink(avatarPath, (err) => {
+        if (err) {
+          console.error('Error deleting avatar file:', err);
+          // Still return success as we've updated the user profile
+          return res.status(200).json({
+            message: 'Avatar removed from profile but file deletion failed',
+            user: user.getSafeProfile()
+          });
+        }
+
+        res.status(200).json({
+          message: 'Avatar deleted successfully',
+          user: user.getSafeProfile()
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Avatar deletion error:', error);
+    res.status(500).json({
+      message: 'Failed to delete avatar',
+      error: 'DELETE_ERROR'
     });
   }
 });
