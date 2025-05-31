@@ -4,6 +4,7 @@ import HeaderTypingIndicator from '../components/HeaderTypingIndicator';
 import Message from '../components/Message';
 import ReplyPreview from '../components/ReplyPreview';
 import TypingIndicator from '../components/TypingIndicator';
+import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -412,11 +413,12 @@ const Chat = () => {
         {/* User Info */}
         <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-medium text-sm sm:text-base">
-                {user?.username?.charAt(0).toUpperCase()}
-              </span>
-            </div>
+            <UserAvatar 
+              user={user} 
+              size="md" 
+              showStatus={true}
+              isOnline={isConnected}
+            />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
                 {user?.username}
@@ -528,18 +530,11 @@ const Chat = () => {
                           `}
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="relative">
-                              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                <span className="text-white font-medium">
-                                  {conversation.participant?.username?.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-gray-800 rounded-full ${
-                                isUserOnline(conversation.participant?._id)
-                                  ? 'bg-green-500'
-                                  : 'bg-gray-400 dark:bg-gray-600'
-                              }`}></div>
-                            </div>
+                            <UserAvatar
+                              user={conversation.participant}
+                              showStatus={true}
+                              isOnline={isUserOnline(conversation.participant?._id)}
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <p className="font-medium text-gray-900 dark:text-white truncate">
@@ -547,31 +542,32 @@ const Chat = () => {
                                 </p>
                               </div>
                               <p className={`text-sm truncate ${
-                                isTyping
-                                  ? 'text-blue-600 dark:text-blue-400 font-medium'
+                                conversation.unreadCount > 0 && !isOwnMessage
+                                  ? 'font-semibold text-gray-900 dark:text-white'
                                   : 'text-gray-500 dark:text-gray-400'
                               }`}>
-                                {isTyping
-                                  ? 'Typing...'
-                                  : lastMessage ? (
-                                      <span className="flex items-center space-x-1">
-                                        {isOwnMessage && (
-                                          <span className="text-gray-600 dark:text-gray-400 font-medium">You:</span>
-                                        )}
-                                        <span>
-                                          {lastMessage.deleted?.isDeleted
-                                            ? 'Message deleted'
-                                            : lastMessage.content
-                                          }
-                                          {lastMessage.edited?.isEdited && !lastMessage.deleted?.isDeleted && (
-                                            <span className="text-xs text-gray-400 ml-1 italic">edited</span>
-                                          )}
-                                        </span>
+                                {isTyping ? (
+                                  <span className="text-blue-600 dark:text-blue-400 font-medium flex items-center">
+                                    <span className="mr-1">Typing</span>
+                                    <span className="flex space-x-0.5">
+                                      <span className="animate-typing-dot">.</span>
+                                      <span className="animate-typing-dot animation-delay-200">.</span>
+                                      <span className="animate-typing-dot animation-delay-400">.</span>
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <>
+                                    {isOwnMessage && <span className="text-gray-400 dark:text-gray-500">You: </span>}
+                                    {lastMessage?.type === 'image' ? (
+                                      <span className="flex items-center">
+                                        <PhotoIcon className="w-4 h-4 mr-1" />
+                                        {lastMessage.content ? lastMessage.content : 'Photo'}
                                       </span>
                                     ) : (
-                                      'Start a conversation'
-                                    )
-                                }
+                                      lastMessage?.content || 'No messages yet'
+                                    )}
+                                  </>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -620,18 +616,11 @@ const Chat = () => {
                             className="w-full p-3 rounded-lg text-left transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <div className="flex items-center space-x-3">
-                              <div className="relative">
-                                <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white font-medium">
-                                    {user.username?.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-gray-800 rounded-full ${
-                                  isUserOnline(user._id)
-                                    ? 'bg-green-500'
-                                    : 'bg-gray-400 dark:bg-gray-600'
-                                }`}></div>
-                              </div>
+                              <UserAvatar
+                                user={user}
+                                showStatus={true}
+                                isOnline={isUserOnline(user._id)}
+                              />
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-900 dark:text-white truncate">
                                   {user.username}
@@ -725,18 +714,11 @@ const Chat = () => {
                       className="w-full p-3 rounded-lg text-left transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium">
-                              {user.username?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-gray-800 rounded-full ${
-                            isUserOnline(user._id)
-                              ? 'bg-green-500'
-                              : 'bg-gray-400 dark:bg-gray-600'
-                          }`}></div>
-                        </div>
+                        <UserAvatar
+                          user={user}
+                          showStatus={true}
+                          isOnline={isUserOnline(user._id)}
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 dark:text-white truncate">
                             {user.username}
@@ -816,19 +798,11 @@ const Chat = () => {
                       `}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium">
-                              {conversation.participant?.username?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          {/* Online/Offline Indicator */}
-                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-gray-800 rounded-full ${
-                            isUserOnline(conversation.participant?._id)
-                              ? 'bg-green-500'
-                              : 'bg-gray-400 dark:bg-gray-600'
-                          }`}></div>
-                        </div>
+                        <UserAvatar
+                          user={conversation.participant}
+                          showStatus={true}
+                          isOnline={isUserOnline(conversation.participant?._id)}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <button
@@ -857,31 +831,32 @@ const Chat = () => {
                             )}
                           </div>
                           <p className={`text-sm truncate ${
-                            isTyping
-                              ? 'text-blue-600 dark:text-blue-400 font-medium'
+                            conversation.unreadCount > 0 && !isOwnMessage
+                              ? 'font-semibold text-gray-900 dark:text-white'
                               : 'text-gray-500 dark:text-gray-400'
                           }`}>
-                            {isTyping
-                              ? 'Typing...'
-                              : lastMessage ? (
-                                  <span className="flex items-center space-x-1">
-                                    {isOwnMessage && (
-                                      <span className="text-gray-600 dark:text-gray-400 font-medium">You:</span>
-                                    )}
-                                    <span>
-                                      {lastMessage.deleted?.isDeleted
-                                        ? 'Message deleted'
-                                        : lastMessage.content
-                                      }
-                                      {lastMessage.edited?.isEdited && !lastMessage.deleted?.isDeleted && (
-                                        <span className="text-xs text-gray-400 ml-1 italic">edited</span>
-                                      )}
-                                    </span>
+                            {isTyping ? (
+                              <span className="text-blue-600 dark:text-blue-400 font-medium flex items-center">
+                                <span className="mr-1">Typing</span>
+                                <span className="flex space-x-0.5">
+                                  <span className="animate-typing-dot">.</span>
+                                  <span className="animate-typing-dot animation-delay-200">.</span>
+                                  <span className="animate-typing-dot animation-delay-400">.</span>
+                                </span>
+                              </span>
+                            ) : (
+                              <>
+                                {isOwnMessage && <span className="text-gray-400 dark:text-gray-500">You: </span>}
+                                {lastMessage?.type === 'image' ? (
+                                  <span className="flex items-center">
+                                    <PhotoIcon className="w-4 h-4 mr-1" />
+                                    {lastMessage.content ? lastMessage.content : 'Photo'}
                                   </span>
                                 ) : (
-                                  'Start a conversation'
-                                )
-                            }
+                                  lastMessage?.content || 'No messages yet'
+                                )}
+                              </>
+                            )}
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">
                             {lastMessage?.createdAt
@@ -922,17 +897,12 @@ const Chat = () => {
                     </svg>
                   </button>
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-medium text-sm sm:text-base">
-                        {currentConversation.participant?.username?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    {/* Dynamic Online/Offline Indicator */}
-                    <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 border-2 border-white dark:border-gray-800 rounded-full ${
-                      isUserOnline(currentConversation.participant?._id)
-                        ? 'bg-green-500'
-                        : 'bg-gray-400 dark:bg-gray-600'
-                    }`}></div>
+                    <UserAvatar
+                      user={currentConversation.participant}
+                      size="md" 
+                      showStatus={true}
+                      isOnline={isUserOnline(currentConversation.participant?._id)}
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <button

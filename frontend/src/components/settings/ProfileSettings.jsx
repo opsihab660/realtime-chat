@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { UserIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, PencilIcon, UserIcon } from '@heroicons/react/24/outline';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import AvatarUpload from '../AvatarUpload';
 
 const ProfileSettings = () => {
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [formData, setFormData] = useState({
     username: user?.username || '',
     bio: user?.bio || '',
@@ -69,6 +71,72 @@ const ProfileSettings = () => {
     setIsEditing(false);
   };
 
+  const openAvatarUpload = () => {
+    setShowAvatarUpload(true);
+  };
+
+  const closeAvatarUpload = () => {
+    setShowAvatarUpload(false);
+  };
+
+  // Function to render avatar or placeholder
+  const renderAvatar = () => {
+    if (user?.avatar) {
+      // Ensure the avatar URL has the full base URL if it's a relative path
+      const avatarUrl = user.avatar.startsWith('http') 
+        ? user.avatar 
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.avatar}`;
+      
+      return (
+        <div className="relative">
+          <img 
+            src={avatarUrl} 
+            alt={user.displayName || user.username} 
+            className="w-24 h-24 rounded-full object-cover"
+            onError={(e) => {
+              console.error('Failed to load avatar:', e);
+              e.target.onerror = null;
+              // Fallback to initials if image fails to load
+              e.target.style.display = 'none';
+              // Show fallback initial
+              e.target.parentNode.classList.add('bg-blue-600');
+              e.target.parentNode.classList.add('flex');
+              e.target.parentNode.classList.add('items-center');
+              e.target.parentNode.classList.add('justify-center');
+              // Add initial letter
+              const initialSpan = document.createElement('span');
+              initialSpan.className = 'text-white font-semibold text-xl';
+              initialSpan.textContent = user?.username?.charAt(0).toUpperCase();
+              e.target.parentNode.appendChild(initialSpan);
+            }}
+          />
+          <button 
+            onClick={openAvatarUpload}
+            className="absolute bottom-0 right-0 bg-blue-600 text-white p-1.5 rounded-full shadow-md hover:bg-blue-700 transition-colors"
+          >
+            <CameraIcon className="w-4 h-4" />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative">
+        <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center">
+          <span className="text-white font-semibold text-xl">
+            {user?.username?.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <button 
+          onClick={openAvatarUpload}
+          className="absolute bottom-0 right-0 bg-blue-600 text-white p-1.5 rounded-full shadow-md hover:bg-blue-700 transition-colors"
+        >
+          <CameraIcon className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-2xl">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -104,6 +172,19 @@ const ProfileSettings = () => {
         <div className="px-6 py-6">
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Avatar */}
+              <div className="flex items-center space-x-4 mb-6">
+                {renderAvatar()}
+                <div>
+                  <h3 className="text-base font-medium text-gray-900 dark:text-white">
+                    Profile Picture
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Click the camera icon to update your profile picture
+                  </p>
+                </div>
+              </div>
+
               {/* Username */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -198,11 +279,7 @@ const ProfileSettings = () => {
             <div className="space-y-6">
               {/* Profile Display */}
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-xl">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                {renderAvatar()}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {user?.displayName || user?.username}
@@ -251,13 +328,19 @@ const ProfileSettings = () => {
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                     Bio
                   </label>
-                  <p className="text-gray-900 dark:text-white">{user.bio}</p>
+                  <p className="text-gray-900 dark:text-white whitespace-pre-line">{user.bio}</p>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Avatar Upload Component */}
+      <AvatarUpload 
+        isVisible={showAvatarUpload} 
+        onClose={closeAvatarUpload} 
+      />
     </div>
   );
 };

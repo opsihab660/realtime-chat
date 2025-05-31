@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import {
+    ArrowLeftIcon,
+    ChatBubbleLeftRightIcon,
+    CheckCircleIcon,
+    ClockIcon,
+    EyeIcon,
+    ShieldExclamationIcon,
+    UserIcon,
+    XMarkIcon
+} from '@heroicons/react/24/outline';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useNavigate, useParams } from 'react-router-dom';
+import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
-import { usersAPI } from '../services/api';
 import { useChat } from '../hooks';
-import toast from 'react-hot-toast';
-import {
-  ArrowLeftIcon,
-  UserIcon,
-  ChatBubbleLeftRightIcon,
-  ShieldExclamationIcon,
-  ClockIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
+import { usersAPI } from '../services/api';
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -26,6 +29,8 @@ const UserProfile = () => {
   const [error, setError] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isStartingConversation, setIsStartingConversation] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Check if user is online
   const isUserOnline = (userId) => {
@@ -51,6 +56,21 @@ const UserProfile = () => {
     return 'Offline';
   };
 
+  // Get full avatar URL
+  const getAvatarUrl = (user) => {
+    if (!user?.avatar) return null;
+    return user.avatar.startsWith('http') 
+      ? user.avatar 
+      : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.avatar}`;
+  };
+
+  // Handle view full avatar image
+  const handleViewFullImage = () => {
+    if (profileUser?.avatar) {
+      setShowFullImage(true);
+    }
+  };
+
   // Load user profile
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -62,6 +82,7 @@ const UserProfile = () => {
       try {
         const response = await usersAPI.getUserById(userId);
         setProfileUser(response.data.user);
+        setImageError(false);
       } catch (error) {
         console.error('Failed to load user profile:', error);
         setError(error.response?.data?.message || 'Failed to load user profile');
@@ -177,17 +198,24 @@ const UserProfile = () => {
             {/* Profile Header */}
             <div className="px-6 py-8 border-b border-gray-200 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
-                {/* Avatar */}
-                <div className="relative">
-                  <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-3xl">
-                      {profileUser.username?.charAt(0).toUpperCase()}
-                    </span>
+                {/* Enhanced Avatar */}
+                <div 
+                  className="relative cursor-pointer"
+                  onClick={handleViewFullImage}
+                >
+                  <div className="border-4 border-blue-100 dark:border-blue-900 rounded-full p-1 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <UserAvatar 
+                      user={profileUser}
+                      size="2xl"
+                      showStatus={true}
+                      isOnline={isUserOnline(profileUser._id)}
+                    />
+                    {profileUser.avatar && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-20 rounded-full transition-all duration-300">
+                        <EyeIcon className="w-8 h-8 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
                   </div>
-                  {/* Online Status */}
-                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 border-4 border-white dark:border-gray-800 rounded-full ${
-                    isUserOnline(profileUser._id) ? 'bg-green-500' : 'bg-gray-400 dark:bg-gray-600'
-                  }`}></div>
                 </div>
 
                 {/* User Info */}
@@ -288,6 +316,38 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Full Image Preview Modal */}
+      {showFullImage && profileUser?.avatar && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          onClick={() => setShowFullImage(false)}
+        >
+          <div className="relative max-w-2xl max-h-full">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFullImage(false);
+              }}
+              className="absolute -top-12 right-0 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+            <img
+              src={getAvatarUrl(profileUser)}
+              alt={`${profileUser.username}'s avatar`}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg border-4 border-white"
+              onClick={(e) => e.stopPropagation()}
+              onError={() => setImageError(true)}
+            />
+            {imageError && (
+              <div className="text-center bg-red-900 bg-opacity-80 text-white p-4 rounded-lg mt-4">
+                Failed to load full-size image
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

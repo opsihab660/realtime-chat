@@ -5,7 +5,9 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
+import path from 'path';
 import { Server } from 'socket.io';
+import { fileURLToPath } from 'url';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -15,6 +17,10 @@ import userRoutes from './routes/users.js';
 
 // Import socket handlers
 import { handleSocketConnection, socketAuthMiddleware } from './socket/socketHandlers.js';
+
+// Get directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -88,7 +94,25 @@ app.use('/uploads', (req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
-}, express.static('uploads'));
+}, express.static(path.join(__dirname, 'uploads')));
+
+// Explicitly serve avatar files
+app.use('/api/upload/avatar', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads/avatars')));
+
+// Explicitly serve image files
+app.use('/api/upload/image', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads/images')));
 
 // MongoDB connection
 if (!process.env.MONGODB_URI) {

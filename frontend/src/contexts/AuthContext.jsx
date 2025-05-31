@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import toast from 'react-hot-toast';
+import { authAPI } from '../services/api';
 
 // Initial state
 const initialState = {
@@ -24,6 +24,7 @@ const AUTH_ACTIONS = {
   LOAD_USER_SUCCESS: 'LOAD_USER_SUCCESS',
   LOAD_USER_FAILURE: 'LOAD_USER_FAILURE',
   UPDATE_PROFILE: 'UPDATE_PROFILE',
+  UPDATE_USER: 'UPDATE_USER',
   CLEAR_ERROR: 'CLEAR_ERROR'
 };
 
@@ -84,6 +85,7 @@ const authReducer = (state, action) => {
       };
 
     case AUTH_ACTIONS.UPDATE_PROFILE:
+    case AUTH_ACTIONS.UPDATE_USER:
       return {
         ...state,
         user: {
@@ -234,6 +236,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user directly from responses
+  const updateUser = (userData) => {
+    console.log('🔄 AuthContext: Directly updating user data:', userData);
+    dispatch({
+      type: AUTH_ACTIONS.UPDATE_USER,
+      payload: userData
+    });
+    return { success: true };
+  };
+
   // Clear error function
   const clearError = () => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
@@ -245,6 +257,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    updateUser,
     clearError
   };
 
