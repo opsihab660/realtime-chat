@@ -266,7 +266,7 @@ const Chat = () => {
           // Extract filename from the URL
           const imageUrl = messageToDelete.file.url;
           const filename = imageUrl.split('/').pop();
-          
+
           // Delete the image file
           await fileAPI.deleteImage(filename);
           console.log('Image file deleted from server:', filename);
@@ -399,8 +399,8 @@ const Chat = () => {
   // Get image URL
   const getImageUrl = (filePath) => {
     if (!filePath) return null;
-    return filePath.startsWith('http') 
-      ? filePath 
+    return filePath.startsWith('http')
+      ? filePath
       : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${filePath}`;
   };
 
@@ -484,9 +484,9 @@ const Chat = () => {
         {/* User Info */}
         <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <UserAvatar 
-              user={user} 
-              size="md" 
+            <UserAvatar
+              user={user}
+              size="md"
               showStatus={true}
               isOnline={isConnected}
             />
@@ -698,15 +698,24 @@ const Chat = () => {
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                   Click to start conversation •
-                                  <button
+                                  <span
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleViewProfile(user._id);
                                     }}
-                                    className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline ml-1 cursor-pointer"
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleViewProfile(user._id);
+                                      }
+                                    }}
                                   >
                                     View profile
-                                  </button>
+                                  </span>
                                 </p>
                               </div>
                             </div>
@@ -796,15 +805,24 @@ const Chat = () => {
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {isUserOnline(user._id) ? 'Online' : 'Offline'} • Click to start conversation •
-                            <button
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleViewProfile(user._id);
                               }}
-                              className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+                              className="text-blue-600 dark:text-blue-400 hover:underline ml-1 cursor-pointer"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleViewProfile(user._id);
+                                }
+                              }}
                             >
                               View profile
-                            </button>
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -876,15 +894,24 @@ const Chat = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <button
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleViewProfile(conversation.participant?._id);
                               }}
-                              className="font-medium text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                              className="font-medium text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left cursor-pointer"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleViewProfile(conversation.participant?._id);
+                                }
+                              }}
                             >
                               {conversation.participant?.username}
-                            </button>
+                            </span>
                             {/* Seen/Sent Status for last message */}
                             {lastMessage && isOwnMessage && (
                               <div className="flex items-center space-x-1 ml-2">
@@ -970,7 +997,7 @@ const Chat = () => {
                   <div className="relative flex-shrink-0">
                     <UserAvatar
                       user={currentConversation.participant}
-                      size="md" 
+                      size="md"
                       showStatus={true}
                       isOnline={isUserOnline(currentConversation.participant?._id)}
                     />
@@ -994,7 +1021,7 @@ const Chat = () => {
                       </p>
                     </button>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="flex items-center space-x-2">
                     {/* Info Button - Single toggle for right panel */}
@@ -1002,7 +1029,7 @@ const Chat = () => {
                       onClick={() => toggleRightPanel(rightPanelTab || 'profile')}
                       className={`p-2 rounded-full transition-colors ${
                         showRightPanel
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400' 
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400'
                       }`}
                       title="View details"
@@ -1023,7 +1050,7 @@ const Chat = () => {
             {/* Main Chat Container with Right Panel */}
             <div className="flex-1 flex overflow-hidden">
               {/* Messages Area with Enhanced Lazy Loading */}
-              <div 
+              <div
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
                 className={`overflow-y-auto p-2 sm:p-4 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent ${
@@ -1094,10 +1121,10 @@ const Chat = () => {
               </div>
 
               {/* Right Side Panel - Responsive */}
-              <div 
+              <div
                 className={`bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out ${
-                  showRightPanel 
-                    ? 'w-full md:w-80 lg:w-96 opacity-100 h-full absolute md:static top-0 left-0 right-0 z-20' 
+                  showRightPanel
+                    ? 'w-full md:w-80 lg:w-96 opacity-100 h-full absolute md:static top-0 left-0 right-0 z-20'
                     : 'w-0 opacity-0 h-full'
                 }`}
               >
@@ -1150,7 +1177,7 @@ const Chat = () => {
                           {/* User Profile Section */}
                           <div className="text-center mb-6">
                             <div className="mb-4">
-                              <UserAvatar 
+                              <UserAvatar
                                 user={currentConversation.participant}
                                 size="xl"
                                 showStatus={true}
@@ -1158,18 +1185,18 @@ const Chat = () => {
                                 className="mx-auto"
                               />
                             </div>
-                            
+
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                               {currentConversation.participant.displayName || currentConversation.participant.username}
                             </h2>
                             <p className="text-gray-500 dark:text-gray-400 mb-2">
                               @{currentConversation.participant.username}
                             </p>
-                            
+
                             <div className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm">
                               <span className={`w-2 h-2 rounded-full mr-2 ${
-                                isUserOnline(currentConversation.participant?._id) 
-                                  ? 'bg-green-500' 
+                                isUserOnline(currentConversation.participant?._id)
+                                  ? 'bg-green-500'
                                   : 'bg-gray-400'
                               }`}></span>
                               <span>{getUserStatusText(currentConversation.participant?._id)}</span>
@@ -1204,7 +1231,7 @@ const Chat = () => {
                                   </p>
                                 </div>
                               )}
-                              
+
                               <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                                   Username
@@ -1228,7 +1255,7 @@ const Chat = () => {
                               >
                                 <span>View Full Profile</span>
                               </button>
-                              
+
                               <button
                                 className="w-full py-2 px-4 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center space-x-2"
                               >
@@ -1238,13 +1265,13 @@ const Chat = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {rightPanelTab === 'media' && (
                         <div className="p-3 sm:p-4">
                           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                             Shared Images
                           </h4>
-                          
+
                           {imageMessages.length === 0 ? (
                             <div className="text-center py-10">
                               <PhotoIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -1255,14 +1282,14 @@ const Chat = () => {
                           ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2">
                               {imageMessages.map((imgMsg) => (
-                                <div 
-                                  key={imgMsg._id} 
+                                <div
+                                  key={imgMsg._id}
                                   className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                                   onClick={() => handleImageClick(imgMsg)}
                                 >
-                                  <img 
-                                    src={getImageUrl(imgMsg.file?.url)} 
-                                    alt={imgMsg.content || 'Shared image'} 
+                                  <img
+                                    src={getImageUrl(imgMsg.file?.url)}
+                                    alt={imgMsg.content || 'Shared image'}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       e.target.onerror = null;
@@ -1409,10 +1436,10 @@ const Chat = () => {
         onImageUpload={handleImageUpload}
         onClose={() => setShowImageUpload(false)}
       />
-      
+
       {/* Full Size Image Preview */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
           onClick={handleCloseImagePreview}
         >

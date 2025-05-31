@@ -1,7 +1,6 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
@@ -38,7 +37,7 @@ const io = new Server(server, {
 // Security middleware
 app.use(helmet());
 
-// CORS - Must be before rate limiting
+// CORS configuration
 app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true,
@@ -47,32 +46,6 @@ app.use(cors({
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   optionsSuccessStatus: 200 // For legacy browser support
 }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Skip preflight requests and admin IPs
-  skip: (req) => {
-    // Skip OPTIONS requests
-    if (req.method === 'OPTIONS') return true;
-
-    // Skip localhost/development IPs and admin IPs
-    const adminIPs = ['127.0.0.1', '::1', 'localhost', '103.106.239.112'];
-    const clientIP = req.ip || req.socket.remoteAddress;
-
-    if (adminIPs.includes(clientIP)) {
-      console.log('🔓 Admin access granted for IP:', clientIP);
-      return true;
-    }
-
-    return false;
-  }
-});
-app.use(limiter);
 
 // Handle preflight requests
 app.options('*', (req, res) => {
@@ -139,39 +112,6 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'Real-time Chat API is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Admin status check endpoint
-app.get('/api/admin/status', (req, res) => {
-  const clientIP = req.ip || req.socket.remoteAddress;
-  const adminIPs = ['127.0.0.1', '::1', 'localhost', '103.106.239.112'];
-
-  const isAdmin = adminIPs.includes(clientIP);
-
-  res.json({
-    ip: clientIP,
-    isAdmin: isAdmin,
-    message: isAdmin ? '👑 Welcome Admin!' : '🚫 Access Denied',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Admin endpoint to reset rate limits (admin IPs only)
-app.post('/api/admin/reset-limits', (req, res) => {
-  const clientIP = req.ip || req.socket.remoteAddress;
-  const adminIPs = ['127.0.0.1', '::1', 'localhost', '103.106.239.112'];
-
-  if (!adminIPs.includes(clientIP)) {
-    return res.status(403).json({ message: 'Admin access only' });
-  }
-
-  // Reset rate limits (this is a simple implementation)
-  console.log('🔄 Rate limits reset by admin:', clientIP);
-  res.json({
-    message: 'Rate limits reset successfully',
-    admin: true,
     timestamp: new Date().toISOString()
   });
 });
